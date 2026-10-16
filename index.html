@@ -1,0 +1,2840 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>journeys：Unit2 The Storm - 英語教材互動點讀系統</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --bg-page: #f8fafc;
+      --surface: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --hotspot-border: rgba(37, 99, 235, 0.45);
+      --hotspot-bg: rgba(59, 130, 246, 0.08);
+      --hotspot-active-bg: rgba(245, 158, 11, 0.35);
+      --hotspot-active-border: #f59e0b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg-page);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      user-select: none;
+    }
+
+    /* 頂部純白高對比導航列 */
+    header {
+      background: #ffffff;
+      color: #0f172a;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      z-index: 40;
+      flex-wrap: wrap;
+      gap: 12px;
+      min-height: 60px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 1.1rem;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-primary {
+      color: var(--primary);
+    }
+
+    .page-tag {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    /* 右側按鈕群組 */
+    .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      background: #ffffff;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      text-decoration: none;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+
+    .btn:hover {
+      background: #f8fafc;
+      color: #0f172a;
+      border-color: #94a3b8;
+    }
+
+    .btn-play {
+      background: #059669;
+      color: #ffffff;
+      border-color: #047857;
+    }
+
+    .btn-play:hover {
+      background: #047857;
+      color: #ffffff;
+    }
+
+    .btn-play.playing {
+      background: #f59e0b;
+      border-color: #d97706;
+      color: #ffffff;
+      animation: pulseBtn 1.2s infinite ease-in-out;
+    }
+
+    @keyframes pulseBtn {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(0.98); opacity: 0.9; }
+    }
+
+    .btn-export {
+      background: #f0f9ff;
+      color: #0369a1;
+      border-color: #bae6fd;
+    }
+
+    .btn-export:hover {
+      background: #e0f2fe;
+      color: #0284c7;
+    }
+
+    /* 一體成型切換按鈕群組 (Segmented Controls) */
+    .segmented-group {
+      display: inline-flex;
+      background: #f1f5f9;
+      padding: 2px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+    }
+
+    .segmented-btn {
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      padding: 5px 10px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #64748b;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .segmented-btn.active {
+      background: var(--primary);
+      color: #ffffff;
+      box-shadow: 0 1px 3px rgba(37, 99, 235, 0.3);
+    }
+
+    /* 主舞台區 */
+    main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      position: relative;
+      background: #f1f5f9;
+      overflow: auto;
+    }
+
+    .stage-card {
+      position: relative;
+      width: 100%;
+      max-width: 760px;
+      aspect-ratio: 0.77;
+      background: #ffffff;
+      box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05);
+      border-radius: 12px;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .page-image {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #ffffff;
+      display: block;
+      pointer-events: none;
+    }
+
+    /* 備援渲染器 */
+    .fallback-card {
+      width: 100%;
+      height: 100%;
+      padding: 32px;
+      background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      color: #1e293b;
+    }
+
+    /* 熱區圖層 */
+    .hotspots-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: auto;
+    }
+
+    .hotspot {
+      position: absolute;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 10;
+      border: 1px dashed var(--hotspot-border);
+      background-color: var(--hotspot-bg);
+    }
+
+    .hotspot.hidden-border {
+      border-color: transparent !important;
+      background-color: transparent !important;
+    }
+
+    .hotspot:hover {
+      background-color: rgba(37, 99, 235, 0.2) !important;
+      border-color: #2563eb !important;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+      transform: scale(1.008);
+      z-index: 20;
+    }
+
+    .hotspot.speaking {
+      background-color: var(--hotspot-active-bg) !important;
+      border: 2px solid var(--hotspot-active-border) !important;
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.65);
+      transform: scale(1.015);
+      z-index: 30;
+      animation: pulse 1.2s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.95; }
+      50% { opacity: 0.6; }
+    }
+
+    /* 底部即時字幕條 */
+    footer {
+      background: #ffffff;
+      color: #0f172a;
+      border-top: 1px solid var(--border);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 40;
+      min-height: 60px;
+      gap: 16px;
+    }
+
+    .toast-content {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .toast-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #2563eb;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .toast-text {
+      font-weight: 800;
+      font-size: 0.95rem;
+      color: #0f172a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .toast-trans {
+      font-size: 0.78rem;
+      color: #64748b;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* 圖片管理 Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    .modal-box {
+      background: #ffffff;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 960px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      border: 1px solid #cbd5e1;
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f8fafc;
+    }
+
+    .modal-body {
+      padding: 16px 20px;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .slot-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .slot-card.has-img {
+      border-color: #bfdbfe;
+      background: #eff6ff;
+    }
+
+    .slot-thumb {
+      width: 100%;
+      height: 110px;
+      background: #ffffff;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .slot-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 頂部高對比純白導航列 -->
+  <header>
+    <div class="brand">
+      <span class="brand-primary">journeys：</span>Unit2 The Storm
+      <span class="page-tag" id="curPageTag">第1頁 (1/28)</span>
+    </div>
+
+    <!-- 右側依序排列的指定控制工具 -->
+    <div class="toolbar-right">
+      <!-- 1. <朗讀整頁> -->
+      <button class="btn btn-play" id="btnPlayAll" title="一鍵循序朗讀整頁所有段落與熱區">
+        ▶ 朗讀整頁
+      </button>
+
+      <!-- 2. <圖片管理> (已取消插槽進度載入標籤) -->
+      <button class="btn" id="btnOpenManager" title="開啟 28 頁獨立插槽管理中心（維持零碰撞獨立儲存）">
+        🖼️ 圖片管理
+      </button>
+
+      <!-- 3. <匯出HTML> -->
+      <button class="btn btn-export" id="btnExportHtml" title="一鍵下載單一獨立 HTML 文件，離線直接運作">
+        📥 匯出HTML
+      </button>
+
+      <!-- 4. <上一頁> 與 <下一頁> -->
+      <div class="segmented-group">
+        <button class="segmented-btn" id="btnPrev" title="上一頁 (←)">
+          ◀ 上一頁
+        </button>
+        <button class="segmented-btn" id="btnNext" title="下一頁 (→)">
+          下一頁 ▶
+        </button>
+      </div>
+
+      <!-- 5. <語速 0.7x , 1.0x> 一體成型切換按鈕群組 -->
+      <div class="segmented-group">
+        <button class="segmented-btn active" id="btnSpeed07" title="0.7倍超慢精聽：適合初學幼童、磨耳朵與逐詞聽辨">
+          0.7x 精聽
+        </button>
+        <button class="segmented-btn" id="btnSpeed10" title="1.0倍標準：自然教室原速">
+          1.0x 標準
+        </button>
+      </div>
+
+      <!-- 熱區邊框開關 -->
+      <button class="btn" id="btnToggleHotspots" style="padding:6px 9px;" title="切換熱區邊框顯示/隱藏">
+        👁️
+      </button>
+    </div>
+  </header>
+
+  <!-- 主舞台區 -->
+  <main>
+    <div class="stage-card" id="stageCard">
+      <!-- 課本圖片層：預設綁定圖片網址 -->
+      <img id="pageImg" class="page-image" style="display:none;" alt="教材課本頁">
+      
+      <!-- 備援精美渲染層 -->
+      <div id="fallbackView" class="fallback-card">
+        <div>
+          <span style="font-size:0.75rem; text-transform:uppercase; color:#64748b; font-weight:700;">Journeys Grade 1 · Lesson 2</span>
+          <h2 id="fallbackTitle" style="font-size:1.4rem; font-weight:800; color:#1e3a8a; margin-top:4px;">Words to Know</h2>
+          <div id="fallbackCategory" style="margin-top:6px; display:inline-block; font-size:0.75rem; background:#fff; padding:2px 8px; border-radius:99px; border:1px solid #cbd5e1; font-weight:700;">Words</div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.85); padding:16px; border-radius:12px; border:1px solid #e2e8f0; margin:auto 0;">
+          <p style="font-size:0.75rem; color:#64748b; font-weight:700;">章節導讀 / 摘要</p>
+          <p id="fallbackSummary" style="font-size:0.9rem; color:#334155; margin-top:4px; font-weight:500;">
+            高頻字彙卡片 1 & 2：he, look 以及字彙清單
+          </p>
+        </div>
+
+        <div style="font-size:0.75rem; color:#94a3b8; text-align:center;">
+          點擊畫面中任一熱區皆可直接發音朗讀；或將 37.png ~ 64.png 圖片與本 HTML 放在同個資料夾直接瀏覽。
+        </div>
+      </div>
+
+      <!-- 互動熱區層 -->
+      <div class="hotspots-layer" id="hotspotsLayer"></div>
+    </div>
+  </main>
+
+  <!-- 底部字幕與語速切換區 (常駐浮動條) -->
+  <footer>
+    <div class="toast-content">
+      <div class="toast-icon">🔊</div>
+      <div style="min-width:0; flex:1;">
+        <div class="toast-text" id="liveText">點擊課本任一句子、單字或對話氣泡即可播放點讀發音。</div>
+        <div class="toast-trans" id="liveTrans">雙語朗讀與標點智慧升調引擎已就緒</div>
+      </div>
+    </div>
+
+    <!-- 底部專屬醒目語速群組 -->
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span style="font-size:0.75rem; color:#64748b; font-weight:600;" class="hide-sm">語速：</span>
+      <div class="segmented-group">
+        <button class="segmented-btn active" id="footerSpeed07">0.7倍 超慢精聽</button>
+        <button class="segmented-btn" id="footerSpeed10">1.0倍 標準教室</button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- 圖片管理中心彈窗 (Zero-Collision 28 插槽架構) -->
+  <div class="modal-overlay" id="imageModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <h3 style="font-size:1.1rem; font-weight:800; color:#0f172a;">🖼️ 圖片管理中心（單頁獨立插槽與更換）</h3>
+          <p style="font-size:0.75rem; color:#64748b; margin-top:2px;">
+            零碰撞（Zero-Collision）架構：第 1 頁至 28 頁已預設綁定專屬圖片網址，完全獨立互斥儲存於 pageImages[頁碼]
+          </p>
+        </div>
+        <button class="btn" id="btnCloseModal" style="border:none; background:#f1f5f9; padding:6px 10px;">✕</button>
+      </div>
+
+      <div style="padding:10px 20px; background:#f8fafc; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+        <span style="font-size:0.8rem; color:#475569;">
+          智慧分流規則：<code style="color:#2563eb; font-weight:700;">37.png ➔ P.1</code>, <code style="color:#2563eb; font-weight:700;">38.png ➔ P.2</code> ... <code style="color:#2563eb; font-weight:700;">64.png ➔ P.28</code>
+        </span>
+        <div style="display:flex; gap:8px;">
+          <label class="btn" style="background:#2563eb; color:#fff; border-color:#1d4ed8; font-size:0.78rem;">
+            📂 批次智慧分流上傳
+            <input type="file" id="batchInput" multiple accept="image/*" style="display:none">
+          </label>
+          <button class="btn" id="btnClearAll" style="font-size:0.78rem; color:#64748b; border-color:#cbd5e1; background:#ffffff;">
+            重置為預設網址
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-body" id="slotsGrid"></div>
+    </div>
+  </div>
+
+  <script>
+    // 28 頁教材 OCR 數據
+    const textbookPages = [
+  {
+    "pageNumber": 1,
+    "title": "Words to Know: he, look",
+    "category": "Words",
+    "defaultFilename": "37.png",
+    "summary": "高頻字彙卡片 1 & 2：he, look 以及字彙清單（課本 P.38）",
+    "hotspots": [
+      {
+        "id": "p37-title",
+        "text": "Words to Know",
+        "translation": "認識常用字彙",
+        "x": 46,
+        "y": 5.5,
+        "width": 25,
+        "height": 12,
+        "type": "heading"
+      },
+      {
+        "id": "p37-read-btn",
+        "text": "Read Together",
+        "translation": "一起朗讀",
+        "x": 72,
+        "y": 5,
+        "width": 14,
+        "height": 6,
+        "type": "label"
+      },
+      {
+        "id": "p37-inst1",
+        "text": "Read each Context Card.",
+        "translation": "閱讀每張語境卡片。",
+        "x": 49,
+        "y": 19.5,
+        "width": 38,
+        "height": 3.5,
+        "type": "sentence"
+      },
+      {
+        "id": "p37-inst2",
+        "text": "Choose two blue words. Use them in sentences.",
+        "translation": "選擇兩個藍色單字，用它們造句。",
+        "x": 49,
+        "y": 24.5,
+        "width": 38,
+        "height": 7,
+        "type": "sentence"
+      },
+      {
+        "id": "p37-vocab-header",
+        "text": "WORDS TO KNOW High-Frequency Words",
+        "translation": "本課常用重點高頻單字",
+        "x": 4,
+        "y": 40.5,
+        "width": 30,
+        "height": 4.5,
+        "type": "label"
+      },
+      {
+        "id": "p37-w-he",
+        "text": "he",
+        "translation": "他（男性第三人稱代名詞）",
+        "x": 14,
+        "y": 46.2,
+        "width": 10,
+        "height": 3.5,
+        "type": "word"
+      },
+      {
+        "id": "p37-w-look",
+        "text": "look",
+        "translation": "看、注視",
+        "x": 12,
+        "y": 51,
+        "width": 14,
+        "height": 3.5,
+        "type": "word"
+      },
+      {
+        "id": "p37-w-have",
+        "text": "have",
+        "translation": "有、擁有",
+        "x": 12,
+        "y": 56,
+        "width": 14,
+        "height": 3.5,
+        "type": "word"
+      },
+      {
+        "id": "p37-w-for",
+        "text": "for",
+        "translation": "為、給、為了",
+        "x": 14,
+        "y": 61,
+        "width": 10,
+        "height": 3.5,
+        "type": "word"
+      },
+      {
+        "id": "p37-w-too",
+        "text": "too",
+        "translation": "也、太過",
+        "x": 14,
+        "y": 66,
+        "width": 10,
+        "height": 3.5,
+        "type": "word"
+      },
+      {
+        "id": "p37-w-what",
+        "text": "what",
+        "translation": "什麼",
+        "x": 12,
+        "y": 71,
+        "width": 14,
+        "height": 3.5,
+        "type": "word"
+      },
+      {
+        "id": "p37-c1-title",
+        "text": "he",
+        "translation": "他",
+        "x": 62,
+        "y": 36,
+        "width": 10,
+        "height": 4,
+        "type": "word"
+      },
+      {
+        "id": "p37-c1-sent",
+        "text": "He walked across the street with his friends.",
+        "translation": "他和朋友們一起穿過馬路。",
+        "x": 48,
+        "y": 40.5,
+        "width": 34,
+        "height": 7.5,
+        "type": "sentence"
+      },
+      {
+        "id": "p37-c2-title",
+        "text": "look",
+        "translation": "看",
+        "x": 61,
+        "y": 68.5,
+        "width": 12,
+        "height": 4,
+        "type": "word"
+      },
+      {
+        "id": "p37-c2-sent",
+        "text": "Children look at water from the fire hose.",
+        "translation": "孩子們看著消防水帶噴出的水。",
+        "x": 48,
+        "y": 73,
+        "width": 34,
+        "height": 7.5,
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "pageNumber": 2,
+    "title": "Words to Know: have, for, too, what",
+    "category": "Words",
+    "defaultFilename": "38.png",
+    "summary": "高頻字彙卡片 3~6：have, for, too, what（課本 P.39）",
+    "hotspots": [
+      {
+        "id": "p38-c3-word",
+        "text": "have",
+        "translation": "有",
+        "x": 23,
+        "y": 3.5,
+        "width": 16,
+        "height": 4.5,
+        "type": "word"
+      },
+      {
+        "id": "p38-c3-sent",
+        "text": "We have fun seeing the fast fire truck.",
+        "translation": "看到疾馳的消防車，我們玩得很開心。",
+        "x": 12,
+        "y": 8.2,
+        "width": 35,
+        "height": 7.5,
+        "type": "sentence"
+      },
+      {
+        "id": "p38-c4-word",
+        "text": "for",
+        "translation": "給、為了",
+        "x": 66,
+        "y": 3.5,
+        "width": 13,
+        "height": 4.5,
+        "type": "word"
+      },
+      {
+        "id": "p38-c4-sent",
+        "text": "The doctor had a kind smile for Ann.",
+        "translation": "醫生對安露出親切的微笑。",
+        "x": 54,
+        "y": 8.2,
+        "width": 34,
+        "height": 7.5,
+        "type": "sentence"
+      },
+      {
+        "id": "p38-c5-word",
+        "text": "too",
+        "translation": "也",
+        "x": 24,
+        "y": 36.5,
+        "width": 14,
+        "height": 4.5,
+        "type": "word"
+      },
+      {
+        "id": "p38-c5-sent",
+        "text": "They took hats and the sunblock, too.",
+        "translation": "他們帶了帽子，也帶了防曬乳。",
+        "x": 12,
+        "y": 41,
+        "width": 35,
+        "height": 7.5,
+        "type": "sentence"
+      },
+      {
+        "id": "p38-c6-word",
+        "text": "what",
+        "translation": "什麼",
+        "x": 64,
+        "y": 36.5,
+        "width": 16,
+        "height": 4.5,
+        "type": "word"
+      },
+      {
+        "id": "p38-c6-sent",
+        "text": "What do people do to help you feel safe?",
+        "translation": "人們會做些什麼來讓你感到安全？",
+        "x": 54,
+        "y": 41,
+        "width": 35,
+        "height": 7.5,
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "pageNumber": 3,
+    "title": "Read and Comprehend: Characters",
+    "category": "Comprehension",
+    "defaultFilename": "39.png",
+    "summary": "閱讀理解技巧：了解角色 (Understanding Characters) 與推理預測（課本 P.40）",
+    "hotspots": [
+      {
+        "id": "p39-title",
+        "text": "Read and Comprehend",
+        "translation": "閱讀與理解",
+        "x": 24,
+        "y": 5.5,
+        "width": 48,
+        "height": 13,
+        "type": "heading"
+      },
+      {
+        "id": "p39-skill-header",
+        "text": "TARGET SKILL",
+        "translation": "核心目標技能",
+        "x": 25,
+        "y": 22.5,
+        "width": 22,
+        "height": 3.5,
+        "type": "label"
+      },
+      {
+        "id": "p39-skill-title",
+        "text": "Understanding Characters",
+        "translation": "了解故事角色",
+        "x": 28,
+        "y": 26.5,
+        "width": 36,
+        "height": 4,
+        "type": "heading"
+      },
+      {
+        "id": "p39-skill-body",
+        "text": "The people and animals in a story are the characters. Think about who the characters are and what they do. Use story clues, called text evidence, to figure out how characters feel and why they act as they do. You can write text evidence in a chart like this.",
+        "translation": "故事中的人物和動物就是角色。思考角色是誰以及他們的作為。利用文本證據找出角色的感受與動機。",
+        "x": 28,
+        "y": 27,
+        "width": 60,
+        "height": 26,
+        "type": "paragraph"
+      },
+      {
+        "id": "p39-c1",
+        "text": "Characters",
+        "translation": "角色",
+        "x": 35,
+        "y": 55.5,
+        "width": 18,
+        "height": 3.5,
+        "type": "label"
+      },
+      {
+        "id": "p39-c2",
+        "text": "Actions",
+        "translation": "行動",
+        "x": 65,
+        "y": 55.5,
+        "width": 18,
+        "height": 3.5,
+        "type": "label"
+      },
+      {
+        "id": "p39-strat-header",
+        "text": "TARGET STRATEGY",
+        "translation": "目標策略",
+        "x": 25,
+        "y": 75,
+        "width": 28,
+        "height": 3.5,
+        "type": "label"
+      },
+      {
+        "id": "p39-strat-title",
+        "text": "Infer/Predict",
+        "translation": "推斷與預測",
+        "x": 28,
+        "y": 80,
+        "width": 20,
+        "height": 4,
+        "type": "heading"
+      },
+      {
+        "id": "p39-strat-body",
+        "text": "Use text evidence to figure out more about the story and to think of what might happen next.",
+        "translation": "利用文本證據深入了解故事，並思考接下來可能會發生什麼。",
+        "x": 28,
+        "y": 80,
+        "width": 58,
+        "height": 11,
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "pageNumber": 4,
+    "title": "Preview the Topic: Weather",
+    "category": "Comprehension",
+    "defaultFilename": "40.png",
+    "summary": "主題預覽：天氣與暴風雨的自然徵兆（課本 P.41）",
+    "hotspots": [
+      {
+        "id": "p40-preview-label",
+        "text": "PREVIEW THE TOPIC",
+        "translation": "主題預覽",
+        "x": 16,
+        "y": 9,
+        "width": 28,
+        "height": 3.5,
+        "type": "label"
+      },
+      {
+        "id": "p40-topic-name",
+        "text": "Weather",
+        "translation": "天氣",
+        "x": 16,
+        "y": 13,
+        "width": 18,
+        "height": 4,
+        "type": "heading"
+      },
+      {
+        "id": "p40-q1",
+        "text": "How can you tell a storm is coming?",
+        "translation": "你怎麼知道暴風雨要來了？",
+        "x": 16,
+        "y": 18.2,
+        "width": 52,
+        "height": 4.2,
+        "type": "question"
+      },
+      {
+        "id": "p40-s1",
+        "text": "Look at the sky.",
+        "translation": "看看天空。",
+        "x": 16,
+        "y": 22.5,
+        "width": 35,
+        "height": 3.8,
+        "type": "sentence"
+      },
+      {
+        "id": "p40-s2",
+        "text": "Clouds move closer.",
+        "translation": "烏雲越來越近。",
+        "x": 16,
+        "y": 26.5,
+        "width": 35,
+        "height": 3.8,
+        "type": "sentence"
+      },
+      {
+        "id": "p40-q2",
+        "text": "What might you hear?",
+        "translation": "你可能會聽到什麼？",
+        "x": 16,
+        "y": 30.5,
+        "width": 38,
+        "height": 4,
+        "type": "question"
+      },
+      {
+        "id": "p40-s3",
+        "text": "Thunder crashes.",
+        "translation": "雷聲轟鳴。",
+        "x": 16,
+        "y": 34.5,
+        "width": 35,
+        "height": 3.8,
+        "type": "sentence"
+      },
+      {
+        "id": "p40-s4",
+        "text": "The storm is on its way!",
+        "translation": "暴風雨即將來臨！",
+        "x": 16,
+        "y": 38.5,
+        "width": 42,
+        "height": 3.8,
+        "type": "sentence"
+      },
+      {
+        "id": "p40-s5",
+        "text": "There is some bad weather in the story you will read called The Storm.",
+        "translation": "在即將閱讀的《暴風雨》故事中，有一些惡劣的天氣。",
+        "x": 16,
+        "y": 42.5,
+        "width": 58,
+        "height": 7.2,
+        "type": "sentence"
+      },
+      {
+        "id": "p40-talk",
+        "text": "Talk About It What kind of weather do you like best? Tell a partner.",
+        "translation": "討論交流：你最喜歡哪種天氣？告訴你的夥伴。",
+        "x": 16,
+        "y": 86,
+        "width": 68,
+        "height": 8,
+        "type": "question"
+      }
+    ]
+  },
+  {
+    "pageNumber": 5,
+    "title": "Anchor Text: Meet Raúl Colón",
+    "category": "Story",
+    "defaultFilename": "41.png",
+    "summary": "作者與繪者介紹：Raúl Colón 與寫實小說體裁特點（課本 P.42）",
+    "hotspots": [
+      {
+        "id": "p41-auth-sub",
+        "text": "Meet the Author and Illustrator",
+        "translation": "認識作者兼繪者",
+        "x": 40,
+        "y": 7,
+        "width": 40,
+        "height": 3.5,
+        "type": "label"
+      },
+      {
+        "id": "p41-auth-name",
+        "text": "Raúl Colón",
+        "translation": "勞爾·科隆",
+        "x": 40,
+        "y": 11,
+        "width": 25,
+        "height": 4.5,
+        "type": "heading"
+      },
+      {
+        "id": "p41-bio-1",
+        "text": "As a little boy in Puerto Rico, Raúl Colón was often very sick.",
+        "translation": "在波多黎各還是個小男孩時，勞爾·科隆經常生病。",
+        "x": 40,
+        "y": 16.5,
+        "width": 45,
+        "height": 8.5,
+        "type": "sentence"
+      },
+      {
+        "id": "p41-bio-2",
+        "text": "He spent a lot of time inside, drawing.",
+        "translation": "他花了很多時間待在室內畫畫。",
+        "x": 40,
+        "y": 25.5,
+        "width": 45,
+        "height": 6.5,
+        "type": "sentence"
+      },
+      {
+        "id": "p41-bio-3",
+        "text": "He even made his own comic books.",
+        "translation": "他甚至還畫了自己的漫畫書。",
+        "x": 40,
+        "y": 32.5,
+        "width": 45,
+        "height": 6.5,
+        "type": "sentence"
+      },
+      {
+        "id": "p41-bio-4",
+        "text": "Today, Mr. Colón lives in New York and works as an artist and a writer.",
+        "translation": "如今，科隆先生住在紐約，是一位藝術家兼作家。",
+        "x": 40,
+        "y": 39.5,
+        "width": 45,
+        "height": 10,
+        "type": "sentence"
+      },
+      {
+        "id": "p41-skill",
+        "text": "Understanding Characters Tell about characters’ actions.",
+        "translation": "了解角色：說說角色的行動。",
+        "x": 6,
+        "y": 42.5,
+        "width": 28,
+        "height": 8,
+        "type": "paragraph"
+      },
+      {
+        "id": "p41-genre",
+        "text": "Realistic fiction is a made-up story that could happen in real life. Look for: things that could really happen, people who act like people in real life.",
+        "translation": "體裁：寫實小說是虛構的故事，但在現實中可能發生。留意可能真實發生的事與像現實中的人物行為。",
+        "x": 6,
+        "y": 63,
+        "width": 28,
+        "height": 23,
+        "type": "paragraph"
+      }
+    ]
+  },
+  {
+    "pageNumber": 6,
+    "title": "The Storm (Title Page)",
+    "category": "Story",
+    "defaultFilename": "42.png",
+    "summary": "課文故事封面：The Storm，爺爺撐傘走在雨中（課本 P.43）",
+    "hotspots": [
+      {
+        "id": "p42-title",
+        "text": "The Storm",
+        "translation": "暴風雨",
+        "x": 12,
+        "y": 17,
+        "width": 48,
+        "height": 22,
+        "type": "heading"
+      },
+      {
+        "id": "p42-byline",
+        "text": "written and illustrated by Raúl Colón",
+        "translation": "圖文作者：勞爾·科隆",
+        "x": 16,
+        "y": 40,
+        "width": 40,
+        "height": 8,
+        "type": "sentence"
+      },
+      {
+        "id": "p42-eq-title",
+        "text": "ESSENTIAL QUESTION",
+        "translation": "核心問題",
+        "x": 60,
+        "y": 81.5,
+        "width": 30,
+        "height": 3.5,
+        "type": "label"
+      },
+      {
+        "id": "p42-eq-body",
+        "text": "What happens during a storm?",
+        "translation": "暴風雨時會發生什麼事？",
+        "x": 60,
+        "y": 85.5,
+        "width": 30,
+        "height": 6.5,
+        "type": "question"
+      }
+    ]
+  },
+  {
+    "pageNumber": 7,
+    "title": "Story: Pop has come in.",
+    "category": "Story",
+    "defaultFilename": "43.png",
+    "summary": "爺爺 Pop 進屋了，身上都濕透了（課本 P.44）",
+    "hotspots": [
+      {
+        "id": "p43-s1",
+        "text": "Pop has come in.",
+        "translation": "波普（爺爺）走進來了。",
+        "x": 24,
+        "y": 80.5,
+        "width": 52,
+        "height": 5.5,
+        "type": "sentence"
+      },
+      {
+        "id": "p43-s2",
+        "text": "Look! He is wet.",
+        "translation": "看！他濕透了。",
+        "x": 24,
+        "y": 86,
+        "width": 52,
+        "height": 5.5,
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "pageNumber": 8,
+    "title": "Story: Tim and Rip ran to him.",
+    "category": "Story",
+    "defaultFilename": "44.png",
+    "summary": "提姆和小狗小雷興奮地跑向爺爺（課本 P.45）",
+    "hotspots": [
+      {
+        "id": "p44-s1",
+        "text": "Tim and Rip ran to him.",
+        "translation": "提姆和小雷跑向他。",
+        "x": 18,
+        "y": 81,
+        "width": 64,
+        "height": 6.5,
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "pageNumber": 9,
+    "title": "Story: Tim, Rip, and Pop have fun.",
+    "category": "Story",
+    "defaultFilename": "45.png",
+    "summary": "提姆、小雷和爺爺開心地玩紅球（課本 P.46）",
+    "hotspots": [
+      {
+        "id": "p45-s1",
+        "text": "Tim, Rip, and Pop have fun.",
+        "translation": "提姆、小雷和波普玩得很開心。",
+        "x": 13,
+        "y": 83.5,
+        "width": 72,
+        "height": 8.5,
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "pageNumber": 10,
+    "title": "Story: Tim had to go to bed.",
+    "category": "Story",
+    "defaultFilename": "46.png",
+    "summary": "睡覺時間到了，提姆該上床了（課本 P.47）",
+    "hotspots": [
+      {
+        "id": "p46-s1",
+        "text": "Tim had to go to bed.",
+        "translation": "提姆得去睡覺了。",
+        "x": 24,
+        "y": 86,
+        "width": 52,
+        "height": 6.5,
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "pageNumber": 11,
+    "title": "Story: What did Tim and Rip see?",
+    "category": "Story",
+    "defaultFilename": "47.png",
+    "summary": "窗外電閃雷鳴，提姆和小雷看見了什麼？（課本 P.48）",
+    "hotspots": [
+      {
+        "id": "p47-s1",
+        "text": "What did Tim and Rip see?",
+        "translation": "提姆和小雷看到了什麼？",
+        "x": 18,
+        "y": 86,
+        "width": 64,
+        "height": 6.5,
+        "type": "question"
+      }
+    ]
+  },
+  {
+    "pageNumber": 12,
+    "title": "Story: Tim hid in his bed!",
+    "category": "Story",
+    "defaultFilename": "48.png",
+    "summary": "害怕暴風雨的提姆和小雷都躲了起來！（課本 P.49）",
+    "hotspots": [
+      {
+        "id": "p48-s1",
+        "text": "Tim hid in his bed!",
+        "translation": "提姆躲進了被窩裡！",
+        "x": 24,
+        "y": 78.5,
+        "width": 54,
+        "height": 6.5,
+        "type": "sentence"
+      },
+      {
+        "id": "p48-s2",
+        "text": "Rip hid, too!",
+        "translation": "小雷也躲起來了！",
+        "x": 24,
+        "y": 85,
+        "width": 54,
+        "height": 6.5,
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "pageNumber": 13,
+    "title": "Story: Look what Pop had for Tim.",
+    "category": "Story",
+    "defaultFilename": "49.png",
+    "summary": "爺爺拿來溫熱飲品，提姆喝了一小口（課本 P.50）",
+    "hotspots": [
+      {
+        "id": "p49-s1",
+        "text": "Look what Pop had for Tim.",
+        "translation": "看波普為提姆拿了什麼來。",
+        "x": 11,
+        "y": 78.5,
+        "width": 68,
+        "height": 6.5,
+        "type": "sentence"
+      },
+      {
+        "id": "p49-s2",
+        "text": "Tim had a sip.",
+        "translation": "提姆喝了一小口。",
+        "x": 11,
+        "y": 85,
+        "width": 68,
+        "height": 6.5,
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "pageNumber": 14,
+    "title": "Story: Pop had a hug for Tim.",
+    "category": "Story",
+    "defaultFilename": "50.png",
+    "summary": "爺爺溫暖擁抱提姆和小狗小雷（課本 P.51）",
+    "hotspots": [
+      {
+        "id": "p50-s1",
+        "text": "Pop had a hug for Tim.",
+        "translation": "波普給了提姆一個擁抱。",
+        "x": 20,
+        "y": 80.5,
+        "width": 60,
+        "height": 5.5,
+        "type": "sentence"
+      },
+      {
+        "id": "p50-s2",
+        "text": "He had a hug for Rip, too.",
+        "translation": "他也給了小雷一個擁抱。",
+        "x": 20,
+        "y": 86,
+        "width": 60,
+        "height": 5.5,
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "pageNumber": 15,
+    "title": "Story: Pop sat with Tim and Rip.",
+    "category": "Story",
+    "defaultFilename": "51.png",
+    "summary": "爺爺坐在床邊為提姆講故事，小雷伴在腳邊（課本 P.52）",
+    "hotspots": [
+      {
+        "id": "p51-s1",
+        "text": "Pop sat with Tim and Rip.",
+        "translation": "波普和提姆與小雷坐在一起。",
+        "x": 13,
+        "y": 83.5,
+        "width": 64,
+        "height": 8.5,
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "pageNumber": 16,
+    "title": "Story: Rip fell fast asleep.",
+    "category": "Story",
+    "defaultFilename": "52.png",
+    "summary": "小狗小雷抱著心愛的紅球甜甜睡著（課本 P.53）",
+    "hotspots": [
+      {
+        "id": "p52-s1",
+        "text": "Rip fell fast asleep with his ball.",
+        "translation": "小雷抱著他的小球甜甜地睡著了。",
+        "x": 26,
+        "y": 48,
+        "width": 52,
+        "height": 28,
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "pageNumber": 17,
+    "title": "Dig Deeper: Analyze Characters",
+    "category": "Comprehension",
+    "defaultFilename": "53.png",
+    "summary": "深度理解：分析角色行為與線索（課本 P.54）",
+    "hotspots": [
+      {
+        "id": "p53-h1",
+        "text": "COMPREHENSION: Dig Deeper",
+        "translation": "理解延伸：深度探索",
+        "x": 28,
+        "y": 6,
+        "width": 35,
+        "height": 7,
+        "type": "heading"
+      },
+      {
+        "id": "p53-h2",
+        "text": "How to Analyze the Text",
+        "translation": "如何分析文本",
+        "x": 28,
+        "y": 14,
+        "width": 45,
+        "height": 4,
+        "type": "label"
+      },
+      {
+        "id": "p53-intro",
+        "text": "Use these pages to learn more about Understanding Characters and Realistic Fiction. Then read The Storm again.",
+        "translation": "透過這些頁面了解角色分析與寫實小說，然後再讀一次《暴風雨》。",
+        "x": 28,
+        "y": 18,
+        "width": 50,
+        "height": 9,
+        "type": "sentence"
+      },
+      {
+        "id": "p53-card-title",
+        "text": "Understanding Characters",
+        "translation": "了解角色",
+        "x": 18,
+        "y": 31,
+        "width": 50,
+        "height": 5,
+        "type": "heading"
+      },
+      {
+        "id": "p53-p-all",
+        "text": "In The Storm, you read about different characters. What important things do the characters do? What does this text evidence tell you about what they are like? Use a chart to list the characters and their actions to help you understand them better.",
+        "translation": "在《暴風雨》中讀到不同角色。角色做了哪些重要的事？這些證據說明了什麼？使用圖表列出角色與行動。",
+        "x": 18,
+        "y": 37,
+        "width": 64,
+        "height": 23,
+        "type": "paragraph"
+      },
+      {
+        "id": "p53-c1",
+        "text": "Characters",
+        "translation": "角色",
+        "x": 27,
+        "y": 65,
+        "width": 18,
+        "height": 4,
+        "type": "label"
+      },
+      {
+        "id": "p53-c2",
+        "text": "Actions",
+        "translation": "行為動作",
+        "x": 56,
+        "y": 65,
+        "width": 18,
+        "height": 4,
+        "type": "label"
+      },
+      {
+        "id": "p53-row1",
+        "text": "Pop: Pop has come in.",
+        "translation": "波普：波普進到屋內了。",
+        "x": 22,
+        "y": 71,
+        "width": 60,
+        "height": 5.5,
+        "type": "sentence"
+      },
+      {
+        "id": "p53-row2",
+        "text": "Tim: Tim hid in his bed!",
+        "translation": "提姆：提姆躲進床裡！",
+        "x": 22,
+        "y": 78,
+        "width": 60,
+        "height": 5.5,
+        "type": "sentence"
+      },
+      {
+        "id": "p53-row3",
+        "text": "Rip: Rip fell fast asleep with his ball.",
+        "translation": "小雷：小雷抱著球沉沉睡著了。",
+        "x": 22,
+        "y": 85,
+        "width": 60,
+        "height": 6,
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "pageNumber": 18,
+    "title": "Genre: Realistic Fiction",
+    "category": "Comprehension",
+    "defaultFilename": "54.png",
+    "summary": "體裁說明：寫實小說的特點與真實連結（課本 P.55）",
+    "hotspots": [
+      {
+        "id": "p54-title",
+        "text": "Genre: Realistic Fiction",
+        "translation": "體裁：寫實小說",
+        "x": 18,
+        "y": 9,
+        "width": 45,
+        "height": 4.5,
+        "type": "heading"
+      },
+      {
+        "id": "p54-p1",
+        "text": "The Storm is a story with a beginning, middle, and end. It is a made-up story, but it could happen in real life.",
+        "translation": "《暴風雨》有開頭、中間和結尾。這是虛構故事，但在真實生活中可能發生。",
+        "x": 18,
+        "y": 14.5,
+        "width": 60,
+        "height": 10.5,
+        "type": "paragraph"
+      },
+      {
+        "id": "p54-p2",
+        "text": "In realistic fiction, characters act like real people. The events could really happen. Think about what happens in The Storm. Could it happen to you?",
+        "translation": "在寫實小說中，角色行為像真實的人，情節也可能真實發生。想想這是否可能發生在你身上？",
+        "x": 18,
+        "y": 26,
+        "width": 60,
+        "height": 15,
+        "type": "paragraph"
+      }
+    ]
+  },
+  {
+    "pageNumber": 19,
+    "title": "Your Turn: Return to Question",
+    "category": "Comprehension",
+    "defaultFilename": "55.png",
+    "summary": "課堂討論：分享交流與核心問題回顧（課本 P.56）",
+    "hotspots": [
+      {
+        "id": "p55-title",
+        "text": "Your Turn",
+        "translation": "換你試試看",
+        "x": 26,
+        "y": 9.5,
+        "width": 40,
+        "height": 6,
+        "type": "heading"
+      },
+      {
+        "id": "p55-ret",
+        "text": "RETURN TO THE ESSENTIAL QUESTION",
+        "translation": "回歸核心問題",
+        "x": 25,
+        "y": 19.5,
+        "width": 52,
+        "height": 3.5,
+        "type": "label"
+      },
+      {
+        "id": "p55-tt-q",
+        "text": "What happens during a storm?",
+        "translation": "暴風雨期間會發生什麼？",
+        "x": 28,
+        "y": 25,
+        "width": 32,
+        "height": 8,
+        "type": "question"
+      },
+      {
+        "id": "p55-tt-body",
+        "text": "Talk about what happens during different parts in The Storm and how it makes Tim feel. Use words and actions to act out his feelings in a group.",
+        "translation": "討論故事不同情節與提姆的心情。用語言和動作分組演出感受。",
+        "x": 15,
+        "y": 33,
+        "width": 45,
+        "height": 22,
+        "type": "paragraph"
+      },
+      {
+        "id": "p55-cc-title",
+        "text": "Classroom Conversation",
+        "translation": "課堂對話",
+        "x": 28,
+        "y": 59.5,
+        "width": 40,
+        "height": 4,
+        "type": "heading"
+      },
+      {
+        "id": "p55-q1",
+        "text": "1 How does Tim show his feelings?",
+        "translation": "1. 提姆是如何表現出他的情緒的？",
+        "x": 16,
+        "y": 69.5,
+        "width": 60,
+        "height": 4.2,
+        "type": "question"
+      },
+      {
+        "id": "p55-q2",
+        "text": "2 How does Pop help Tim?",
+        "translation": "2. 波普是如何幫助提姆的？",
+        "x": 16,
+        "y": 74,
+        "width": 60,
+        "height": 4.2,
+        "type": "question"
+      },
+      {
+        "id": "p55-q3",
+        "text": "3 What does Tim see and hear during the storm?",
+        "translation": "3. 暴風雨期間提姆看見與聽見了什麼？",
+        "x": 16,
+        "y": 78.5,
+        "width": 60,
+        "height": 8,
+        "type": "question"
+      }
+    ]
+  },
+  {
+    "pageNumber": 20,
+    "title": "Write About Reading: Response",
+    "category": "Writing",
+    "defaultFilename": "56.png",
+    "summary": "寫作回應與寫作小秘訣（課本 P.57）",
+    "hotspots": [
+      {
+        "id": "p56-banner",
+        "text": "WRITE ABOUT READING",
+        "translation": "閱讀寫作回應",
+        "x": 14,
+        "y": 11,
+        "width": 36,
+        "height": 4,
+        "type": "label"
+      },
+      {
+        "id": "p56-resp",
+        "text": "Response Look at pages 48–49. Write words to tell how Tim feels. Look for text evidence. Use the pictures and the words on the pages to help you.",
+        "translation": "回應：觀察第 48–49 頁。寫下提姆的感受，找出文本證據。",
+        "x": 14,
+        "y": 16,
+        "width": 48,
+        "height": 19,
+        "type": "paragraph"
+      },
+      {
+        "id": "p56-tip-label",
+        "text": "Writing Tip",
+        "translation": "寫作小叮嚀",
+        "x": 54,
+        "y": 66,
+        "width": 25,
+        "height": 4,
+        "type": "label"
+      },
+      {
+        "id": "p56-tip-body",
+        "text": "Read your answer. Add words that give information.",
+        "translation": "朗讀你的答案，補充能提供豐富資訊的單字。",
+        "x": 48,
+        "y": 70,
+        "width": 36,
+        "height": 12,
+        "type": "sentence"
+      },
+      {
+        "id": "p56-starter",
+        "text": "Tim feels scared when...",
+        "translation": "句型提示：當……的時候提姆感到害怕。",
+        "x": 14,
+        "y": 48,
+        "width": 36,
+        "height": 6,
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "pageNumber": 21,
+    "title": "Informational Text: Storms!",
+    "category": "Informational",
+    "defaultFilename": "57.png",
+    "summary": "科普資訊文本：暴風雨是怎麼形成的？（課本 P.58）",
+    "hotspots": [
+      {
+        "id": "p57-title",
+        "text": "Storms!",
+        "translation": "暴風雨！",
+        "x": 40,
+        "y": 12,
+        "width": 50,
+        "height": 12,
+        "type": "heading"
+      },
+      {
+        "id": "p57-genre",
+        "text": "Informational text gives facts on a topic. It can be from a textbook, article, or website. Look for storm facts as you read.",
+        "translation": "體裁：說明性文本提供關於某主題的事實資訊。",
+        "x": 6,
+        "y": 40,
+        "width": 28,
+        "height": 20,
+        "type": "paragraph"
+      },
+      {
+        "id": "p57-focus",
+        "text": "Photographs show pictures of real things with important details. Use these photographs to find out information about storms.",
+        "translation": "照片展示具備重要細節的真實景象。",
+        "x": 6,
+        "y": 62,
+        "width": 28,
+        "height": 20,
+        "type": "paragraph"
+      },
+      {
+        "id": "p57-s1",
+        "text": "A storm is a strong wind with rain or snow. It may have hail or sleet.",
+        "translation": "暴風雨是伴隨降雨或降雪的強風，有時也可能夾帶冰雹或雨夾雪。",
+        "x": 42,
+        "y": 45,
+        "width": 44,
+        "height": 9,
+        "type": "sentence"
+      },
+      {
+        "id": "p57-s2",
+        "text": "Warm, light air goes up quickly. It mixes with high, cold air.",
+        "translation": "溫暖輕柔的空氣快速上升，與高空冰冷的空氣混合。",
+        "x": 42,
+        "y": 54,
+        "width": 44,
+        "height": 9,
+        "type": "sentence"
+      },
+      {
+        "id": "p57-s3",
+        "text": "Look! It’s a storm.",
+        "translation": "看！這就是暴風雨。",
+        "x": 42,
+        "y": 63,
+        "width": 44,
+        "height": 6,
+        "type": "sentence"
+      },
+      {
+        "id": "p57-photo-caption",
+        "text": "This is a lightning storm in Pampa, Texas.",
+        "translation": "這是德克薩斯州潘帕市的一場雷暴。",
+        "x": 43,
+        "y": 84,
+        "width": 42,
+        "height": 10,
+        "type": "sentence"
+      }
+    ]
+  },
+  {
+    "pageNumber": 22,
+    "title": "Kinds of Storms",
+    "category": "Informational",
+    "defaultFilename": "58.png",
+    "summary": "不同種類的風暴：雷暴、龍捲風、颶風、沙塵暴（課本 P.59）",
+    "hotspots": [
+      {
+        "id": "p58-title",
+        "text": "Kinds of Storms",
+        "translation": "暴風雨的種類",
+        "x": 36,
+        "y": 46.5,
+        "width": 40,
+        "height": 4.5,
+        "type": "heading"
+      },
+      {
+        "id": "p58-blizzard",
+        "text": "A blizzard is a cold storm. It brings lots of snow and strong winds.",
+        "translation": "暴風雪是寒冷的風暴，會帶來大量降雪與強烈狂風。",
+        "x": 36,
+        "y": 35,
+        "width": 52,
+        "height": 8,
+        "type": "paragraph"
+      },
+      {
+        "id": "p58-thunderstorm",
+        "text": "A thunderstorm has thunder and lightning. It can bring heavy rain.",
+        "translation": "雷暴伴隨雷電，並會帶來豪雨。",
+        "x": 36,
+        "y": 51.5,
+        "width": 52,
+        "height": 7.5,
+        "type": "paragraph"
+      },
+      {
+        "id": "p58-tornado",
+        "text": "A tornado is a strong, twisting wind. It is shaped like a cone.",
+        "translation": "龍捲風是一股強烈旋轉的風，外形像個圓錐體。",
+        "x": 36,
+        "y": 60,
+        "width": 52,
+        "height": 7.5,
+        "type": "paragraph"
+      },
+      {
+        "id": "p58-hurricane",
+        "text": "A hurricane is a very big storm. It has strong, spinning winds and rain.",
+        "translation": "颶風是巨大的風暴，具有強大的旋轉狂風與暴雨。",
+        "x": 36,
+        "y": 68.5,
+        "width": 52,
+        "height": 7.5,
+        "type": "paragraph"
+      },
+      {
+        "id": "p58-duststorm",
+        "text": "A dust storm is a strong wind that carries dust for miles.",
+        "translation": "沙塵暴是強風將沙塵吹送到數英里遠的地方。",
+        "x": 36,
+        "y": 77,
+        "width": 52,
+        "height": 7.5,
+        "type": "paragraph"
+      }
+    ]
+  },
+  {
+    "pageNumber": 23,
+    "title": "Measuring Storms",
+    "category": "Informational",
+    "defaultFilename": "59.png",
+    "summary": "氣象測量工具：雨量計、溫度計、風速計、風向袋（課本 P.60）",
+    "hotspots": [
+      {
+        "id": "p59-label-rain",
+        "text": "rain gauge",
+        "translation": "雨量計（測量降雨量的儀器）",
+        "x": 20,
+        "y": 29,
+        "width": 22,
+        "height": 4.5,
+        "type": "label"
+      },
+      {
+        "id": "p59-label-thermo",
+        "text": "thermometer",
+        "translation": "溫度計（測量氣溫的工具）",
+        "x": 48,
+        "y": 29,
+        "width": 22,
+        "height": 4.5,
+        "type": "label"
+      },
+      {
+        "id": "p59-label-windg",
+        "text": "wind gauge",
+        "translation": "風速計（測量風速的儀器）",
+        "x": 20,
+        "y": 60,
+        "width": 22,
+        "height": 4.5,
+        "type": "label"
+      },
+      {
+        "id": "p59-label-windsock",
+        "text": "wind sock",
+        "translation": "風向袋（指示風向和風速的標誌）",
+        "x": 48,
+        "y": 60,
+        "width": 22,
+        "height": 4.5,
+        "type": "label"
+      },
+      {
+        "id": "p59-measuring-title",
+        "text": "Measuring Storms",
+        "translation": "測量暴風雨",
+        "x": 18,
+        "y": 67,
+        "width": 40,
+        "height": 4.5,
+        "type": "heading"
+      },
+      {
+        "id": "p59-measuring-body",
+        "text": "Scientists have tools for measuring storms. They measure heat and cold. They measure the wind. They measure rainfall and snowfall, too.",
+        "translation": "科學家擁有測量暴風雨的工具。他們測量冷熱溫度，也測量風速與降水。",
+        "x": 18,
+        "y": 71.5,
+        "width": 60,
+        "height": 14,
+        "type": "paragraph"
+      },
+      {
+        "id": "p59-question",
+        "text": "What storms have you seen?",
+        "translation": "你見過哪些暴風雨？",
+        "x": 18,
+        "y": 88,
+        "width": 50,
+        "height": 4.5,
+        "type": "question"
+      }
+    ]
+  },
+  {
+    "pageNumber": 24,
+    "title": "Compare Texts",
+    "category": "Comprehension",
+    "defaultFilename": "60.png",
+    "summary": "文本比較：文本互聯、自我連結與社會延伸（課本 P.61）",
+    "hotspots": [
+      {
+        "id": "p60-title",
+        "text": "Compare Texts",
+        "translation": "文本比較與延伸",
+        "x": 43,
+        "y": 7,
+        "width": 45,
+        "height": 7,
+        "type": "heading"
+      },
+      {
+        "id": "p60-t1",
+        "text": "TEXT TO TEXT",
+        "translation": "文本對文本",
+        "x": 18,
+        "y": 23,
+        "width": 25,
+        "height": 3.2,
+        "type": "label"
+      },
+      {
+        "id": "p60-b1",
+        "text": "Compare Storms Look again at the selection Storms! Talk about each kind of storm. Which kind of storm did Tim and Rip see? Speak one at a time, and listen to everyone's ideas.",
+        "translation": "比較風暴：再看一次《暴風雨！》文章。討論每種風暴。提姆和小雷看到的是哪種風暴？",
+        "x": 18,
+        "y": 27,
+        "width": 54,
+        "height": 19,
+        "type": "paragraph"
+      },
+      {
+        "id": "p60-t2",
+        "text": "TEXT TO SELF",
+        "translation": "文本對個人自身",
+        "x": 18,
+        "y": 49,
+        "width": 25,
+        "height": 3.2,
+        "type": "label"
+      },
+      {
+        "id": "p60-b2",
+        "text": "Write Sentences Write about a time you saw a storm. How did the weather change?",
+        "translation": "寫句子：寫一寫你看過暴風雨的一次經歷。天氣是如何變化的？",
+        "x": 18,
+        "y": 53.5,
+        "width": 52,
+        "height": 12,
+        "type": "paragraph"
+      },
+      {
+        "id": "p60-t3",
+        "text": "TEXT TO WORLD",
+        "translation": "文本對現實世界",
+        "x": 18,
+        "y": 68,
+        "width": 25,
+        "height": 3.2,
+        "type": "label"
+      },
+      {
+        "id": "p60-b3",
+        "text": "Connect to Social Studies How can neighbors help each other in a storm? Draw a picture. Tell a partner about it.",
+        "translation": "連結社會領域：暴風雨中鄰居該如何互相幫助？畫一張圖並告訴夥伴。",
+        "x": 18,
+        "y": 72.5,
+        "width": 56,
+        "height": 12,
+        "type": "paragraph"
+      }
+    ]
+  },
+  {
+    "pageNumber": 25,
+    "title": "Grammar: Possessive Nouns",
+    "category": "Grammar",
+    "defaultFilename": "61.png",
+    "summary": "文法焦點：所有格名詞 (Possessive Nouns) 與加 's 的用法（課本 P.62）",
+    "hotspots": [
+      {
+        "id": "p61-title",
+        "text": "Grammar",
+        "translation": "文法",
+        "x": 10,
+        "y": 8,
+        "width": 40,
+        "height": 7,
+        "type": "heading"
+      },
+      {
+        "id": "p61-rule",
+        "text": "Possessive Nouns Some nouns show that one person or one animal owns or has something. These nouns are called possessive nouns. They end in 's.",
+        "translation": "所有格名詞：有些名詞表示某個人或某隻動物擁有某物。這些名詞稱為所有格名詞，結尾加上 's。",
+        "x": 12,
+        "y": 17,
+        "width": 65,
+        "height": 15,
+        "type": "paragraph"
+      },
+      {
+        "id": "p61-s1-header",
+        "text": "Possessive Nouns for One Person",
+        "translation": "單一人物的所有格名詞",
+        "x": 18,
+        "y": 35,
+        "width": 55,
+        "height": 3.5,
+        "type": "label"
+      },
+      {
+        "id": "p61-ex1",
+        "text": "a man's hat",
+        "translation": "一位男人的帽子",
+        "x": 13,
+        "y": 39,
+        "width": 20,
+        "height": 4.8,
+        "type": "word"
+      },
+      {
+        "id": "p61-ex2",
+        "text": "one boy's bed",
+        "translation": "一個男孩的床",
+        "x": 46,
+        "y": 41,
+        "width": 22,
+        "height": 4.8,
+        "type": "word"
+      },
+      {
+        "id": "p61-s2-header",
+        "text": "Possessive Nouns for One Animal",
+        "translation": "單一動物的所有格名詞",
+        "x": 18,
+        "y": 64,
+        "width": 55,
+        "height": 3.5,
+        "type": "label"
+      },
+      {
+        "id": "p61-ex3",
+        "text": "a dog's ball",
+        "translation": "一隻狗的球",
+        "x": 13,
+        "y": 68,
+        "width": 20,
+        "height": 4.8,
+        "type": "word"
+      },
+      {
+        "id": "p61-ex4",
+        "text": "one cat's tail",
+        "translation": "一隻貓的尾巴",
+        "x": 47,
+        "y": 69,
+        "width": 21,
+        "height": 4.8,
+        "type": "word"
+      }
+    ]
+  },
+  {
+    "pageNumber": 26,
+    "title": "Grammar Practice: Try This!",
+    "category": "Grammar",
+    "defaultFilename": "62.png",
+    "summary": "文法實戰練習：所有格配對與說話造句（課本 P.63）",
+    "hotspots": [
+      {
+        "id": "p62-title",
+        "text": "Try This!",
+        "translation": "動手試一試！",
+        "x": 10,
+        "y": 5,
+        "width": 20,
+        "height": 5,
+        "type": "heading"
+      },
+      {
+        "id": "p62-inst",
+        "text": "Talk about each picture with a partner. Tell who has or owns something. Then write a possessive noun from the box to go with each picture. Use another sheet of paper.",
+        "translation": "和搭檔談談每張圖片。說說誰擁有某物。然後從方框中選出所有格名詞配對各張圖。",
+        "x": 10,
+        "y": 11,
+        "width": 75,
+        "height": 14,
+        "type": "paragraph"
+      },
+      {
+        "id": "p62-wb",
+        "text": "man's bird's boy's dog's girl's cat's",
+        "translation": "單字庫：男人的、鳥的、男孩的、狗的、女孩的、貓的",
+        "x": 14,
+        "y": 28,
+        "width": 72,
+        "height": 4,
+        "type": "label"
+      },
+      {
+        "id": "p62-q1",
+        "text": "1. a girl's bike",
+        "translation": "1. 一個女孩的腳踏車",
+        "x": 18,
+        "y": 33,
+        "width": 28,
+        "height": 13,
+        "type": "sentence"
+      },
+      {
+        "id": "p62-q2",
+        "text": "2. a cat's ball",
+        "translation": "2. 一隻貓咪的球",
+        "x": 18,
+        "y": 47,
+        "width": 28,
+        "height": 13,
+        "type": "sentence"
+      },
+      {
+        "id": "p62-q3",
+        "text": "3. a man's book",
+        "translation": "3. 一位男士的書本",
+        "x": 18,
+        "y": 61,
+        "width": 28,
+        "height": 14,
+        "type": "sentence"
+      },
+      {
+        "id": "p62-q4",
+        "text": "4. a dog's food",
+        "translation": "4. 一隻小狗的飼料",
+        "x": 54,
+        "y": 33,
+        "width": 28,
+        "height": 13,
+        "type": "sentence"
+      },
+      {
+        "id": "p62-q5",
+        "text": "5. one boy's hat",
+        "translation": "5. 一個男孩的帽子",
+        "x": 54,
+        "y": 47,
+        "width": 28,
+        "height": 13,
+        "type": "sentence"
+      },
+      {
+        "id": "p62-q6",
+        "text": "6. one bird's nest",
+        "translation": "6. 一隻小鳥的巢穴",
+        "x": 54,
+        "y": 61,
+        "width": 28,
+        "height": 14,
+        "type": "sentence"
+      },
+      {
+        "id": "p62-gw",
+        "text": "Grammar in Writing Share your writing with a partner. Say a sentence with each possessive noun you used.",
+        "translation": "寫作中的文法：與搭檔分享。用你寫下的每個所有格名詞造一個句子說出來。",
+        "x": 18,
+        "y": 84,
+        "width": 64,
+        "height": 11,
+        "type": "paragraph"
+      }
+    ]
+  },
+  {
+    "pageNumber": 27,
+    "title": "Narrative Writing: Revised Draft",
+    "category": "Writing",
+    "defaultFilename": "63.png",
+    "summary": "敘事寫作修改草稿與特質檢核表（課本 P.64）",
+    "hotspots": [
+      {
+        "id": "p63-title",
+        "text": "Narrative Writing",
+        "translation": "敘事寫作",
+        "x": 10,
+        "y": 8.5,
+        "width": 65,
+        "height": 7,
+        "type": "heading"
+      },
+      {
+        "id": "p63-ideas",
+        "text": "Ideas What did Kit's family do at the beach? Kit drew and wrote about her trip. Then she thought of new details. She added a caption to explain her picture.",
+        "translation": "構思：基特的家人在海灘做了什麼？基特畫出並寫下了旅行。她添加圖說解釋圖片。",
+        "x": 12,
+        "y": 17,
+        "width": 65,
+        "height": 15,
+        "type": "paragraph"
+      },
+      {
+        "id": "p63-draft-badge",
+        "text": "Revised Draft",
+        "translation": "修改草稿",
+        "x": 34,
+        "y": 34,
+        "width": 32,
+        "height": 4,
+        "type": "label"
+      },
+      {
+        "id": "p63-caption",
+        "text": "We saw a fish.",
+        "translation": "我們看見了一條魚。",
+        "x": 30,
+        "y": 56.5,
+        "width": 38,
+        "height": 5,
+        "type": "sentence"
+      },
+      {
+        "id": "p63-checklist-head",
+        "text": "Writing Traits Checklist Ideas",
+        "translation": "寫作特徵檢核清單：構想",
+        "x": 24,
+        "y": 68,
+        "width": 48,
+        "height": 4.5,
+        "type": "label"
+      },
+      {
+        "id": "p63-c1",
+        "text": "Does my writing have interesting details about my family trip?",
+        "translation": "我的文章是否包含關於家庭旅行的有趣細節？",
+        "x": 14,
+        "y": 74,
+        "width": 64,
+        "height": 8,
+        "type": "question"
+      },
+      {
+        "id": "p63-c2",
+        "text": "Do my captions explain the pictures?",
+        "translation": "我的圖說有解釋圖片內容嗎？",
+        "x": 14,
+        "y": 84,
+        "width": 60,
+        "height": 4,
+        "type": "question"
+      },
+      {
+        "id": "p63-c3",
+        "text": "Did I use nouns to name places or things?",
+        "translation": "我有使用名詞來命名地點或事物嗎？",
+        "x": 14,
+        "y": 89,
+        "width": 60,
+        "height": 4,
+        "type": "question"
+      }
+    ]
+  },
+  {
+    "pageNumber": 28,
+    "title": "Writing: Our Trip to the Beach",
+    "category": "Writing",
+    "defaultFilename": "64.png",
+    "summary": "基特的最終作品：海灘之旅與名詞標籤對應（課本 P.65）",
+    "hotspots": [
+      {
+        "id": "p64-inst",
+        "text": "Look for nouns in Kit's final copy. Then revise your own writing. Use the Checklist.",
+        "translation": "在基特的最終稿中尋找名詞，接著修改你自己的寫作。使用檢核表。",
+        "x": 18,
+        "y": 9,
+        "width": 58,
+        "height": 11,
+        "type": "paragraph"
+      },
+      {
+        "id": "p64-final-badge",
+        "text": "Final Copy",
+        "translation": "最終謄清版",
+        "x": 44,
+        "y": 21,
+        "width": 18,
+        "height": 4,
+        "type": "label"
+      },
+      {
+        "id": "p64-title",
+        "text": "Our Trip to the Beach",
+        "translation": "我們的海灘之旅",
+        "x": 20,
+        "y": 31,
+        "width": 60,
+        "height": 6,
+        "type": "heading"
+      },
+      {
+        "id": "p64-item1",
+        "text": "my family",
+        "translation": "我的家人",
+        "x": 25,
+        "y": 53.5,
+        "width": 20,
+        "height": 4.5,
+        "type": "word"
+      },
+      {
+        "id": "p64-item2",
+        "text": "a castle we made",
+        "translation": "我們堆的沙堡",
+        "x": 54,
+        "y": 53.5,
+        "width": 30,
+        "height": 4.5,
+        "type": "word"
+      },
+      {
+        "id": "p64-item3",
+        "text": "We saw a fish.",
+        "translation": "我們看見了一條魚。",
+        "x": 24,
+        "y": 76,
+        "width": 24,
+        "height": 4.5,
+        "type": "sentence"
+      },
+      {
+        "id": "p64-item4",
+        "text": "We found shells.",
+        "translation": "我們找到了貝殼。",
+        "x": 54,
+        "y": 76,
+        "width": 28,
+        "height": 4.5,
+        "type": "sentence"
+      }
+    ]
+  }
+];
+
+    let currentIndex = 0;
+    let showHotspots = true;
+    let speechRate = 0.7; // 1. 預設 0.7 倍超慢精聽
+    let autoPlayTimer = null;
+    let isAutoPlaying = false;
+
+    // 嚴格頁碼隔離字典：預設並綁定 28 頁圖片網址 (檔名 37.png ➔ 第 1 頁，直到 64.png ➔ 第 28 頁)
+    const pageImages = {
+  "1": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/1fecd50e-62c7-46cc-b405-54c1488b4a22",
+  "2": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/4da1c85e-d29b-4c92-979d-dc1cc12f01cf",
+  "3": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/505ff70b-98d1-4fe7-826e-d8690cb46585",
+  "4": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/cf31827a-a75c-4975-81ed-0763122a0cb8",
+  "5": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/bbc85e03-7516-4625-9290-3e3a210d208a",
+  "6": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/217613e1-4068-4c7b-894b-87ca6a680f85",
+  "7": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/80efe637-afee-47fc-8d7b-65147a114ece",
+  "8": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/9080a34d-cce4-40c1-9f7e-fc1e9a5bb75a",
+  "9": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/6d19b6c2-bb9e-42f3-acb4-63ee1acb72b3",
+  "10": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/9afa6ac1-e802-423f-a328-02f2d409cfc9",
+  "11": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/3b6a1650-e065-490c-abbc-c14abe09b135",
+  "12": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/1eeaf5c3-d369-45b6-bea5-b990610114b3",
+  "13": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/f4ae452e-cbe3-4bf2-8f7f-513cbd670c54",
+  "14": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/01a75309-5519-40dd-a242-23d4880ee335",
+  "15": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/ce8278d5-5ca7-4712-b612-c381866920a3",
+  "16": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/1c25428b-0ff7-47be-adfa-515b8022ff1f",
+  "17": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/f5900b92-2fa9-4174-b021-4ba0e8139c77",
+  "18": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/15772a2f-5e75-4c8e-8697-7f984d269fe1",
+  "19": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/09a20daf-dfd0-4085-b764-b1c1eec3d79e",
+  "20": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/f075a839-669c-44ef-9427-328e4210376b",
+  "21": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/5a111b3e-938a-4b07-b8f2-1545cfc7d2f2",
+  "22": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/41e3f3cd-31ca-48a2-a9d4-a20f2ec343b1",
+  "23": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/925b4bd2-b5ff-4c3c-bdf6-f831de75057e",
+  "24": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/225e8d64-9d67-4971-bfc1-5ad418c4c15a",
+  "25": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/5508b464-91cb-4032-9739-90588931b4a0",
+  "26": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/23a14c49-3269-45d3-8beb-b7213165306e",
+  "27": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/bbd243b3-b9e2-4c25-9632-becc8cedd7da",
+  "28": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/1547a43c-a91a-4720-9a3c-7a27fe151e0b",
+  "37": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/8c264957-0cab-4a95-b1bb-a6ee59c14924",
+  "38": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/85b7a21e-39cb-43e7-ac7c-14c046f3da44",
+  "39": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/9f299abb-eca8-439d-91e2-dc52b66a371e",
+  "40": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/1ad5b777-371d-45bd-bf4f-ce24fe1c3539",
+  "41": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/dfbc1bb1-5acc-44f9-9ed8-8216ec2dad4a",
+  "42": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/0f8c49f4-8ee4-4c15-aba8-1747a85d56da",
+  "43": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/20df7085-07c7-4455-9682-e4f1b3c19906",
+  "44": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/731e586b-097a-46e6-9d25-e0026a1e721a",
+  "45": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/7ff10498-65e6-445e-af4d-bc3958c619da",
+  "46": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/67d260fb-6ae9-4895-b2e3-c9e98da8a62c",
+  "47": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/c3a9b43f-99ee-41ae-bd35-47085bfa7b51",
+  "48": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/572e0a87-f034-401d-8060-95f3f5eacdcf",
+  "49": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/638918fe-535e-4612-9da7-3c8e025605b1",
+  "50": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/01a190d7-af18-46df-bfca-725dbd7bcde5",
+  "51": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/dcbc73ba-2c0a-4a94-b5ee-6fe7e9362816",
+  "52": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/51d10f15-63d2-4f57-b419-3c5341509aa7",
+  "53": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/abc9fcf6-0c20-43b2-bc4d-704c1b03f3de",
+  "54": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/ba417123-56d9-4e0b-83f2-4ef3d9dd24c0",
+  "55": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/8141ea09-e28a-4ecc-9198-bf15dba94db8",
+  "56": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/b3353f21-52ec-40c0-b085-179b0fae97c8",
+  "57": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/27ba2407-e913-4ea4-97c7-abd948aebc6f",
+  "58": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/0d380eb1-1215-490d-b7f1-422c7fb2d0bd",
+  "59": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/472defdd-45eb-4bbf-b221-923f894a5d84",
+  "60": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/f2f98c45-9ee7-4e57-895f-9ad97a0f24fc",
+  "61": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/3f453525-fc0e-4203-bf7e-1c140fb856af",
+  "62": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/285a013a-25db-405d-b941-6d3d07a25170",
+  "63": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/982c5142-83f2-478d-a2ce-6c5a0bf00f98",
+  "64": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/6c7365c4-3f6c-4039-9043-7fe5873e0797",
+  "65": "blob:https://ais-dev-ip7psfkfvmaxovmfzgba7e-613667530010.asia-northeast1.run.app/ceab6e57-c932-4cb2-bb06-f0872e527aec"
+};
+
+    const stageCard = document.getElementById('stageCard');
+    const pageImg = document.getElementById('pageImg');
+    const fallbackView = document.getElementById('fallbackView');
+    const fallbackTitle = document.getElementById('fallbackTitle');
+    const fallbackCategory = document.getElementById('fallbackCategory');
+    const fallbackSummary = document.getElementById('fallbackSummary');
+    const hotspotsLayer = document.getElementById('hotspotsLayer');
+    const curPageTag = document.getElementById('curPageTag');
+    const liveText = document.getElementById('liveText');
+    const liveTrans = document.getElementById('liveTrans');
+    const btnPlayAll = document.getElementById('btnPlayAll');
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+    const btnSpeed07 = document.getElementById('btnSpeed07');
+    const btnSpeed10 = document.getElementById('btnSpeed10');
+    const footerSpeed07 = document.getElementById('footerSpeed07');
+    const footerSpeed10 = document.getElementById('footerSpeed10');
+    const btnToggleHotspots = document.getElementById('btnToggleHotspots');
+    const btnOpenManager = document.getElementById('btnOpenManager');
+    const btnExportHtml = document.getElementById('btnExportHtml');
+    const imageModal = document.getElementById('imageModal');
+    const btnCloseModal = document.getElementById('btnCloseModal');
+    const slotsGrid = document.getElementById('slotsGrid');
+    const batchInput = document.getElementById('batchInput');
+    const btnClearAll = document.getElementById('btnClearAll');
+
+    // 常用高頻詞清單
+    const HIGH_FREQ_WORDS = new Set([
+      'he', 'look', 'have', 'for', 'too', 'what', 'play', 'be', 'and', 'help', 'with', 'you',
+      'pop', 'tim', 'rip', 'see', 'hid', 'bed', 'sip', 'hug', 'sat', 'asleep', 'fast', 'ball',
+      'wet', 'fun', 'storm', 'sun', 'hat', 'dog', 'cat', 'bird', 'man', 'boy', 'girl'
+    ]);
+
+    // 2. 智慧語調與情感升調演算法
+    function calculateSmartParams(text, baseRate) {
+      const trimmed = text.trim();
+      let targetPitch = 1.22; // 活潑童趣美式發音語調 (~1.22x)
+      let targetRate = baseRate;
+
+      const isExclamation = trimmed.includes('!') || trimmed.includes('！');
+      const isQuestion = trimmed.includes('?') || trimmed.includes('？');
+
+      if (isExclamation) {
+        targetPitch = 1.32; // 感嘆句：熱情上揚語調 (~1.32x)
+      } else if (isQuestion) {
+        targetPitch = 1.30; // 疑問句：好奇探索揚調 (~1.30x)
+      } else {
+        targetPitch = 1.22;
+      }
+
+      // 單字點讀節奏優化
+      const words = trimmed.replace(/[.,!?:;，。！？；"']/g, '').trim().split(/\s+/);
+      if (words.length <= 2) {
+        const isHighFreq = words.some(w => HIGH_FREQ_WORDS.has(w.toLowerCase()));
+        if (isHighFreq || words.length === 1) {
+          targetRate = Math.min(targetRate, 0.7) * 0.95;
+          if (!isExclamation && !isQuestion) {
+            targetPitch = 1.20;
+          }
+        }
+      }
+
+      return { rate: targetRate, pitch: targetPitch };
+    }
+
+    // 3. 語音篩選演算法：優先匹配 Neural2 / Natural / AnaNeural (兒童聲)
+    let preferredVoice = null;
+    function pickBestVoice() {
+      if (!('speechSynthesis' in window)) return;
+      const voices = window.speechSynthesis.getVoices();
+      if (!voices || voices.length === 0) return;
+
+      const scoreVoice = (v) => {
+        const name = v.name.toLowerCase();
+        const lang = v.lang.toLowerCase();
+        let score = 0;
+
+        if (name.includes('espeak') || name.includes('desktop compact') || name.includes('klatt')) return -500;
+
+        if (lang.startsWith('en')) score += 100;
+        if (lang === 'en-us') score += 50;
+
+        if (name.includes('ananeural')) score += 400; // 兒童聲
+        else if (name.includes('arianeural') || name.includes('jennyneural')) score += 350;
+        else if (name.includes('neural')) score += 300;
+        else if (name.includes('natural')) score += 250;
+        else if (name.includes('google us english') || (name.includes('google') && lang.startsWith('en'))) score += 220;
+        else if (name.includes('samantha')) score += 200;
+        else if (name.includes('victoria') || name.includes('karen') || name.includes('daniel') || name.includes('alex')) score += 180;
+
+        return score;
+      };
+
+      const sorted = [...voices].sort((a, b) => scoreVoice(b) - scoreVoice(a));
+      preferredVoice = sorted[0] || null;
+    }
+
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = pickBestVoice;
+      pickBestVoice();
+    }
+
+    function stopSpeech() {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      if (autoPlayTimer) {
+        clearTimeout(autoPlayTimer);
+        autoPlayTimer = null;
+      }
+      isAutoPlaying = false;
+      btnPlayAll.classList.remove('playing');
+      btnPlayAll.textContent = '▶ 朗讀整頁';
+      document.querySelectorAll('.hotspot').forEach(el => el.classList.remove('speaking'));
+    }
+
+    function speakText(text, trans, onEnd) {
+      if (!('speechSynthesis' in window)) {
+        onEnd && onEnd();
+        return;
+      }
+
+      stopSpeech();
+
+      liveText.textContent = text;
+      liveTrans.textContent = trans || '';
+
+      const clean = text.replace(/_+/g, 'blank').trim();
+      const utterance = new SpeechSynthesisUtterance(clean);
+      const params = calculateSmartParams(clean, speechRate);
+
+      utterance.rate = params.rate;
+      utterance.pitch = params.pitch;
+      utterance.lang = 'en-US';
+
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
+        utterance.lang = preferredVoice.lang;
+      }
+
+      utterance.onend = () => {
+        onEnd && onEnd();
+      };
+      utterance.onerror = () => {
+        onEnd && onEnd();
+      };
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // 智慧分流解析器 (37.png ➔ P.1, 38.png ➔ P.2 ... 64.png ➔ P.28)
+    function resolveBatchFileToPage(filename) {
+      const clean = filename.toLowerCase().trim();
+      const explicit = clean.match(/(?:p|page)[_-]?(\d+)/i);
+      if (explicit) {
+        const num = parseInt(explicit[1], 10);
+        if (num >= 37 && num <= 64) return num - 36;
+        if (num >= 1 && num <= 28) return num;
+      }
+
+      const numMatch = clean.match(/(\d+)/);
+      if (numMatch) {
+        const num = parseInt(numMatch[1], 10);
+        if (num >= 37 && num <= 64) {
+          return num - 36;
+        }
+        if (num >= 1 && num <= 28) {
+          return num;
+        }
+      }
+      return null;
+    }
+
+    // 渲染當前頁
+    function renderCurrentPage() {
+      stopSpeech();
+      const page = textbookPages[currentIndex];
+      const pageNum = page.pageNumber;
+
+      curPageTag.textContent = `第${pageNum}頁 (${currentIndex + 1}/${textbookPages.length})`;
+
+      // 嚴格隔離查表 pageImages[pageNum] 並直接嘗試載入預設綁定圖片
+      const targetSrc = pageImages[pageNum];
+      if (targetSrc) {
+        pageImg.src = targetSrc;
+        pageImg.style.display = 'block';
+        fallbackView.style.display = 'none';
+
+        pageImg.onerror = function() {
+          pageImg.style.display = 'none';
+          fallbackView.style.display = 'flex';
+        };
+        pageImg.onload = function() {
+          pageImg.style.display = 'block';
+          fallbackView.style.display = 'none';
+        };
+      } else {
+        pageImg.style.display = 'none';
+        fallbackView.style.display = 'flex';
+      }
+
+      fallbackTitle.textContent = page.title;
+      fallbackCategory.textContent = page.category;
+      fallbackSummary.textContent = page.summary;
+
+      // 渲染熱區
+      hotspotsLayer.innerHTML = '';
+      page.hotspots.forEach(spot => {
+        const div = document.createElement('div');
+        div.className = 'hotspot' + (showHotspots ? '' : ' hidden-border');
+        div.style.left = spot.x + '%';
+        div.style.top = spot.y + '%';
+        div.style.width = spot.width + '%';
+        div.style.height = spot.height + '%';
+        div.title = spot.text + (spot.translation ? ' (' + spot.translation + ')' : '');
+
+        div.addEventListener('click', (e) => {
+          e.stopPropagation();
+          document.querySelectorAll('.hotspot').forEach(el => el.classList.remove('speaking'));
+          div.classList.add('speaking');
+          speakText(spot.text, spot.translation, () => {
+            div.classList.remove('speaking');
+          });
+        });
+
+        hotspotsLayer.appendChild(div);
+      });
+    }
+
+    // 朗讀整頁
+    btnPlayAll.addEventListener('click', () => {
+      if (isAutoPlaying) {
+        stopSpeech();
+        return;
+      }
+
+      const page = textbookPages[currentIndex];
+      if (page.hotspots.length === 0) return;
+
+      isAutoPlaying = true;
+      btnPlayAll.classList.add('playing');
+      btnPlayAll.textContent = '⏹ 停止朗讀';
+
+      let idx = 0;
+      const playNext = () => {
+        if (!isAutoPlaying || idx >= page.hotspots.length) {
+          stopSpeech();
+          return;
+        }
+
+        const spot = page.hotspots[idx];
+        const domSpots = document.querySelectorAll('.hotspot');
+        domSpots.forEach(el => el.classList.remove('speaking'));
+        if (domSpots[idx]) domSpots[idx].classList.add('speaking');
+
+        speakText(spot.text, spot.translation, () => {
+          if (domSpots[idx]) domSpots[idx].classList.remove('speaking');
+          idx++;
+          autoPlayTimer = setTimeout(playNext, 700);
+        });
+      };
+
+      playNext();
+    });
+
+    // 翻頁控制
+    btnPrev.addEventListener('click', () => {
+      if (currentIndex > 0) {
+        currentIndex--;
+        renderCurrentPage();
+      }
+    });
+
+    btnNext.addEventListener('click', () => {
+      if (currentIndex < textbookPages.length - 1) {
+        currentIndex++;
+        renderCurrentPage();
+      }
+    });
+
+    // 鍵盤左右鍵翻頁
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'PageDown') {
+        if (currentIndex < textbookPages.length - 1) {
+          currentIndex++;
+          renderCurrentPage();
+        }
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        if (currentIndex > 0) {
+          currentIndex--;
+          renderCurrentPage();
+        }
+      } else if (e.key === 'Escape') {
+        stopSpeech();
+        imageModal.classList.remove('show');
+      }
+    });
+
+    // 語速同步切換
+    function setSpeed(rate) {
+      speechRate = rate;
+      if (rate === 0.7) {
+        btnSpeed07.classList.add('active');
+        btnSpeed10.classList.remove('active');
+        footerSpeed07.classList.add('active');
+        footerSpeed10.classList.remove('active');
+      } else {
+        btnSpeed10.classList.add('active');
+        btnSpeed07.classList.remove('active');
+        footerSpeed10.classList.add('active');
+        footerSpeed07.classList.remove('active');
+      }
+    }
+
+    btnSpeed07.addEventListener('click', () => setSpeed(0.7));
+    btnSpeed10.addEventListener('click', () => setSpeed(1.0));
+    footerSpeed07.addEventListener('click', () => setSpeed(0.7));
+    footerSpeed10.addEventListener('click', () => setSpeed(1.0));
+
+    btnToggleHotspots.addEventListener('click', () => {
+      showHotspots = !showHotspots;
+      document.querySelectorAll('.hotspot').forEach(el => {
+        if (showHotspots) el.classList.remove('hidden-border');
+        else el.classList.add('hidden-border');
+      });
+    });
+
+    // 圖片管理中心 Modal
+    btnOpenManager.addEventListener('click', () => {
+      renderSlotsGrid();
+      imageModal.classList.add('show');
+    });
+
+    btnCloseModal.addEventListener('click', () => {
+      imageModal.classList.remove('show');
+    });
+
+    imageModal.addEventListener('click', (e) => {
+      if (e.target === imageModal) {
+        imageModal.classList.remove('show');
+      }
+    });
+
+    function renderSlotsGrid() {
+      slotsGrid.innerHTML = '';
+      textbookPages.forEach((p, idx) => {
+        const card = document.createElement('div');
+        const imgUrl = pageImages[p.pageNumber];
+        card.className = 'slot-card has-img';
+
+        card.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <strong style="font-size:0.85rem; color:#0f172a;">P.${p.pageNumber}</strong>
+            <span style="font-size:0.75rem; color:#2563eb; font-family:monospace; font-weight:700;">${p.defaultFilename}</span>
+          </div>
+          <div class="slot-thumb">
+            <img src="${imgUrl}" alt="Page ${p.pageNumber}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+            <span style="display:none; font-size:0.75rem; color:#94a3b8;">預設檔名：${p.defaultFilename}</span>
+          </div>
+          <div style="font-size:0.72rem; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+            章節：${p.title}
+          </div>
+          <div style="display:flex; gap:6px; margin-top:4px;">
+            <label class="btn" style="flex:1; justify-content:center; font-size:0.75rem; padding:4px 6px;">
+              更換此頁
+              <input type="file" accept="image/*" style="display:none" data-page="${p.pageNumber}" class="slot-file-input">
+            </label>
+            <button class="btn btn-reset" data-page="${p.pageNumber}" title="還原預設網址" style="padding:4px 8px; font-size:0.75rem; color:#64748b;">↺</button>
+          </div>
+        `;
+
+        // 單頁檔案選擇更換
+        const fileInp = card.querySelector('.slot-file-input');
+        fileInp.addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (file) {
+            const url = URL.createObjectURL(file);
+            pageImages[p.pageNumber] = url;
+            renderSlotsGrid();
+            renderCurrentPage();
+          }
+        });
+
+        // 單頁重置為預設網址
+        const resetBtn = card.querySelector('.btn-reset');
+        if (resetBtn) {
+          resetBtn.addEventListener('click', () => {
+            pageImages[p.pageNumber] = './' + p.defaultFilename;
+            renderSlotsGrid();
+            renderCurrentPage();
+          });
+        }
+
+        slotsGrid.appendChild(card);
+      });
+    }
+
+    // 批次智慧分流
+    batchInput.addEventListener('change', (e) => {
+      const files = Array.from(e.target.files);
+      let count = 0;
+      files.forEach(file => {
+        const pageNum = resolveBatchFileToPage(file.name);
+        if (pageNum) {
+          const url = URL.createObjectURL(file);
+          pageImages[pageNum] = url;
+          count++;
+        }
+      });
+      renderSlotsGrid();
+      renderCurrentPage();
+      alert(`🎉 智慧分流完成！已成功指派 ${count} 張圖片至專屬頁碼插槽。`);
+      e.target.value = '';
+    });
+
+    // 重置為預設網址
+    btnClearAll.addEventListener('click', () => {
+      if (confirm('確定要將所有插槽重置為預設圖片網址嗎？')) {
+        textbookPages.forEach(p => {
+          pageImages[p.pageNumber] = './' + p.defaultFilename;
+        });
+        renderSlotsGrid();
+        renderCurrentPage();
+      }
+    });
+
+    // 匯出當前頁面為獨立 HTML 下載
+    btnExportHtml.addEventListener('click', () => {
+      const a = document.createElement('a');
+      const blob = new Blob([document.documentElement.outerHTML], { type: 'text/html;charset=utf-8' });
+      a.href = URL.createObjectURL(blob);
+      a.download = 'journeys_Unit2_The_Storm.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    });
+
+    // 初始化啟動
+    renderCurrentPage();
+  </script>
+</body>
+</html>
